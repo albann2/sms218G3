@@ -1,118 +1,130 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+// Example to Send Text SMS on Button Click in React Native
+// https://aboutreact.com/send-text-sms-in-react-native/
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+// import React in our code
+import React, {useState} from 'react';
+
+// import all the components we are going to use
 import {
   SafeAreaView,
-  ScrollView,
-  StatusBar,
   StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  Text,
+  TouchableOpacity,
+  TextInput,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+// import SMS API
+import SendSMS from 'react-native-sms';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+const App = () => {
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [bodySMS, setBodySMS] = useState(
+    '',
   );
-}
 
-function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  const initiateSMS = () => {
+    // Check for perfect 10 digit length
+    if (mobileNumber.length != 9) {
+      alert('Please insert correct contact number');
+      return;
+    }
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    SendSMS.send(
+      {
+        // Message body
+        body: bodySMS,
+        // Recipients Number
+        recipients: [mobileNumber],
+        // An array of types 
+        // "completed" response when using android
+        successTypes: ['sent', 'queued'],
+      },
+      (completed, cancelled, error) => {
+        if (completed) {
+          console.log('SMS Sent Completed');
+        } else if (cancelled) {
+          console.log('SMS Sent Cancelled');
+        } else if (error) {
+          console.log('Some error occured');
+        }
+      },
+    );
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
+        <Text style={styles.titleText}>
+          messagerie sms react native
+        </Text>
+        <Text style={styles.titleTextsmall}>
+          Enter Mobile Number
+        </Text>
+        <TextInput
+          value={mobileNumber}
+          onChangeText={
+            (mobileNumber) => setMobileNumber(mobileNumber)
+          }
+          placeholder={'Enter Conatct Number to Call'}
+          keyboardType="numeric"
+          style={styles.textInput}
+        />
+        <Text style={styles.titleTextsmall}>
+          Enter SMS body
+        </Text>
+        <TextInput
+          value={bodySMS}
+          onChangeText={(bodySMS) => setBodySMS(bodySMS)}
+          placeholder={'Enter SMS body'}
+          style={styles.textInput}
+        />
+        <TouchableOpacity
+          activeOpacity={0.7}
+          style={styles.buttonStyle}
+          onPress={initiateSMS}>
+          <Text style={styles.buttonTextStyle}>
+            Send Message
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+};
 
 export default App;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    padding: 10,
+    textAlign: 'center',
+  },
+  titleText: {
+    fontSize: 22,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  titleTextsmall: {
+    marginVertical: 8,
+    fontSize: 16,
+  },
+  buttonStyle: {
+    justifyContent: 'center',
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#8ad24e',
+  },
+  buttonTextStyle: {
+    color: '#fff',
+    textAlign: 'center',
+  },
+  textInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+});
