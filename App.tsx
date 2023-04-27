@@ -1,118 +1,146 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useState } from "react";
+import { openContactPicker } from "react-native-contacts";
+import { useDispatch } from "react-redux";
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+// Un type pour représenter un destinataire
+type Recipient = {
+  id: number;
+  name: string;
+  number: string;
+};
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+// Un type pour les props du composant RecipientList
+type RecipientListProps = {
+  recipients: Recipient[];
+  selected: number | null;
+  onSelect: () => void;
+};
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+// Un composant qui affiche la liste des destinataires possibles
+function RecipientList({
+  recipients,
+  selected,
+  onSelect,
+}: RecipientListProps) {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+    <div className="recipient-list">
+      <button onClick={onSelect}>Choisir un destinataire</button>
+      {recipients.map((recipient) => (
+        <div
+          key={recipient.id}
+          className={`recipient-item ${
+            recipient.id === selected ? "selected" : ""
+          }`}
+        >
+          {recipient.name} ({recipient.number})
+        </div>
+      ))}
+    </div>
   );
 }
 
-function App(): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+// Un type pour les props du composant MessageInput
+type MessageInputProps = {
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
+};
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
+// Un composant qui affiche le champ de saisie du message et le bouton d'envoi
+function MessageInput({ value, onChange, onSend }: MessageInputProps) {
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <div className="message-input">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Écrivez votre message ici"
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      <button onClick={onSend}>Envoyer</button>
+    </div>
   );
 }
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+// Un type pour représenter l'action d'envoi de message
+type SendMessageAction = {
+  type: "SEND_MESSAGE";
+  payload: {
+    recipient: number;
+    message: string;
+  };
+};
 
-export default App;
+// Une fonction qui crée l'action d'envoi de message
+function sendMessageAction(
+  recipient: number,
+  message: string
+): SendMessageAction {
+  return {
+    type: "SEND_MESSAGE",
+    payload: {
+      recipient,
+      message,
+    },
+  };
+}
+
+// Le composant principal qui gère l'état de l'interface
+function MessageApp() {
+  // Un état pour stocker le destinataire sélectionné
+  const [selectedRecipient, setSelectedRecipient] = useState<number | null>(
+    null
+  );
+  // Un état pour stocker le message saisi
+  const [message, setMessage] = useState<string>("");
+  // Une liste vide de destinataires au départ
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+
+  // On utilise useDispatch pour récupérer la fonction dispatch
+  const dispatch = useDispatch();
+
+  // Une fonction qui ouvre le sélecteur de contacts et ajoute le contact choisi à la liste des destinataires
+  function selectRecipient() {
+    openContactPicker().then((contact: ContactInfo) => {
+      if (contact) {
+        // On crée un objet de type Recipient à partir du contact choisi
+        const recipient: Recipient = {
+          id: contact.recordID,
+          name: contact.displayName,
+          number: contact.phoneNumbers[0].number,
+        };
+        // On ajoute le recipient à la liste des destinataires
+        setRecipients([...recipients, recipient]);
+        // On sélectionne le recipient comme destinataire actuel
+        setSelectedRecipient(recipient.id);
+      }
+    });
+  }
+
+  // Une fonction qui envoie le message au destinataire sélectionné
+  function sendMessage() {
+    if (selectedRecipient && message) {
+      // On appelle l'action Redux pour envoyer le message
+      dispatch(sendMessageAction(selectedRecipient, message));
+      // On réinitialise le message après l'envoi
+      setMessage("");
+    }
+  }
+
+  return (
+    <div className="message-app">
+      <h1>Interface de messagerie</h1>
+      <RecipientList
+        recipients={recipients}
+        selected={selectedRecipient}
+        onSelect={selectRecipient}
+      />
+      <MessageInput
+        value={message}
+        onChange={setMessage}
+        onSend={sendMessage}
+      />
+    </div>
+  );
+}
+
+export default MessageApp;
