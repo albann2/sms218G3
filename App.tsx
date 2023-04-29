@@ -1,5 +1,5 @@
-// Example to Send Text SMS on Button Click in React Native
-// https://aboutreact.com/send-text-sms-in-react-native/
+// React Native Bridge Example to Send Direct SMS from React Native App
+// https://aboutreact.com/react-native-bridge-send-direct-sms-from-react-native-app/
 
 // import React in our code
 import React, {useState} from 'react';
@@ -12,54 +12,56 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
+  NativeModules,
+  PermissionsAndroid,
 } from 'react-native';
 
-// import SMS API
-import SendSMS from 'react-native-sms';
+var DirectSms = NativeModules.DirectSms;
 
 const App = () => {
+  // Setting up States
   const [mobileNumber, setMobileNumber] = useState('');
   const [bodySMS, setBodySMS] = useState(
-    '',
+    'Please follow https://aboutreact.com',
   );
 
-  const initiateSMS = () => {
-    // Check for perfect 10 digit length
-    if (mobileNumber.length != 9) {
-      alert('Please insert correct contact number');
-      return;
-    }
-
-    SendSMS.send(
-      {
-        // Message body
-        body: bodySMS,
-        // Recipients Number
-        recipients: [mobileNumber],
-        // An array of types 
-        // "completed" response when using android
-        successTypes: ['sent', 'queued'],
-      },
-      (completed, cancelled, error) => {
-        if (completed) {
-          console.log('SMS Sent Completed');
-        } else if (cancelled) {
-          console.log('SMS Sent Cancelled');
-        } else if (error) {
-          console.log('Some error occured');
+  // async function to call the Java native method
+  const sendDirectSms = async () => {
+    if (mobileNumber) {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.SEND_SMS,
+          {
+            title: 'Send SMS App Sms Permission',
+            message:
+              'Send SMS App needs access to your inbox ' +
+              'so you can send messages in background.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          DirectSms.sendDirectSms(mobileNumber, bodySMS);
+          alert('SMS sent');
+        } else {
+          alert('SMS permission denied');
         }
-      },
-    );
+      } catch (error) {
+        console.warn(error);
+        alert(error);
+      }
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.container}>
         <Text style={styles.titleText}>
-          messagerie sms react native
+messagerie sms
         </Text>
         <Text style={styles.titleTextsmall}>
-          Enter Mobile Number
+          Enter Recipients Number
         </Text>
         <TextInput
           value={mobileNumber}
@@ -71,7 +73,7 @@ const App = () => {
           style={styles.textInput}
         />
         <Text style={styles.titleTextsmall}>
-          Enter SMS body
+          Enter SMS Body
         </Text>
         <TextInput
           value={bodySMS}
@@ -82,7 +84,7 @@ const App = () => {
         <TouchableOpacity
           activeOpacity={0.7}
           style={styles.buttonStyle}
-          onPress={initiateSMS}>
+          onPress={sendDirectSms}>
           <Text style={styles.buttonTextStyle}>
             Send Message
           </Text>
@@ -91,8 +93,6 @@ const App = () => {
     </SafeAreaView>
   );
 };
-
-export default App;
 
 const styles = StyleSheet.create({
   container: {
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     textAlign: 'center',
     fontWeight: 'bold',
+    marginBottom: 16,
   },
   titleTextsmall: {
     marginVertical: 8,
@@ -128,3 +129,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
 });
+
+export default App;
