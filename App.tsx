@@ -1,10 +1,4 @@
-// React Native Bridge Example to Send Direct SMS from React Native App
-// https://aboutreact.com/react-native-bridge-send-direct-sms-from-react-native-app/
-
-// import React in our code
-import React, {useState} from 'react';
-
-// import all the components we are going to use
+import React, { useState } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
@@ -12,81 +6,70 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  NativeModules,
-  PermissionsAndroid,
+  Alert
 } from 'react-native';
-
-var DirectSms = NativeModules.DirectSms;
+import SendSMS from 'react-native-sms';
 
 const App = () => {
-  // Setting up States
   const [mobileNumber, setMobileNumber] = useState('');
-  const [bodySMS, setBodySMS] = useState(
-    'Please follow https://aboutreact.com',
-  );
+  const [bodySMS, setBodySMS] = useState('');
 
-  // async function to call the Java native method
-  const sendDirectSms = async () => {
-    if (mobileNumber) {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.SEND_SMS,
-          {
-            title: 'Send SMS App Sms Permission',
-            message:
-              'Send SMS App needs access to your inbox ' +
-              'so you can send messages in background.',
-            buttonNeutral: 'Ask Me Later',
-            buttonNegative: 'Cancel',
-            buttonPositive: 'OK',
-          },
-        );
-        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-          DirectSms.sendDirectSms(mobileNumber, bodySMS);
-          alert('SMS sent');
-        } else {
-          alert('SMS permission denied');
-        }
-      } catch (error) {
-        console.warn(error);
-        alert(error);
-      }
+  const initiateSMS = () => {
+    if (mobileNumber.length !== 9) {
+      Alert.alert('Erreur', 'Veuillez saisir un numéro de téléphone valide.');
+      return;
     }
+
+    SendSMS.send(
+      {
+        body: bodySMS,
+        recipients: [mobileNumber],
+        successTypes: ['sent', 'queued']
+      },
+      (completed, cancelled, error) => {
+        if (completed) {
+          Alert.alert('SMS envoyé', 'Votre message a été envoyé avec succès !');
+        } else if (cancelled) {
+          Alert.alert('SMS annulé', 'L\'envoi de votre message a été annulé.');
+        } else if (error) {
+          Alert.alert('Erreur', `Une erreur est survenue : ${error}`);
+        }
+      }
+    );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.container}>
+      <View style={styles.innerContainer}>
         <Text style={styles.titleText}>
-messagerie sms
+          react-native-sms
         </Text>
-        <Text style={styles.titleTextsmall}>
-          Enter Recipients Number
+        <Text style={styles.inputLabel}>
+          Saisir le numéro de téléphone
         </Text>
         <TextInput
           value={mobileNumber}
-          onChangeText={
-            (mobileNumber) => setMobileNumber(mobileNumber)
-          }
-          placeholder={'Enter Conatct Number to Call'}
+          onChangeText={setMobileNumber}
+          placeholder={'Numéro de téléphone'}
           keyboardType="numeric"
           style={styles.textInput}
         />
-        <Text style={styles.titleTextsmall}>
-          Enter SMS Body
+        <Text style={styles.inputLabel}>
+          Saisir le contenu du SMS
         </Text>
         <TextInput
           value={bodySMS}
-          onChangeText={(bodySMS) => setBodySMS(bodySMS)}
-          placeholder={'Enter SMS body'}
+          onChangeText={setBodySMS}
+          placeholder={'Contenu du SMS'}
           style={styles.textInput}
         />
         <TouchableOpacity
           activeOpacity={0.7}
-          style={styles.buttonStyle}
-          onPress={sendDirectSms}>
-          <Text style={styles.buttonTextStyle}>
-            Send Message
+          style={styles.button}
+          onPress={initiateSMS}
+        >
+          <Text style={styles.buttonText}>
+            Envoyer le message
           </Text>
         </TouchableOpacity>
       </View>
@@ -97,37 +80,47 @@ messagerie sms
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    padding: 10,
-    textAlign: 'center',
+    backgroundColor: 'black',
+    paddingTop: 50,
+    paddingHorizontal: 20
+  },
+  innerContainer: {
+    flex: 1,
+    alignItems: 'center'
   },
   titleText: {
-    fontSize: 22,
-    textAlign: 'center',
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: 20
   },
-  titleTextsmall: {
-    marginVertical: 8,
-    fontSize: 16,
-  },
-  buttonStyle: {
-    justifyContent: 'center',
-    marginTop: 15,
-    padding: 10,
-    backgroundColor: '#8ad24e',
-  },
-  buttonTextStyle: {
-    color: '#fff',
+  inputLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
     textAlign: 'center',
+    width: '100%'
   },
   textInput: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#000',
     borderWidth: 1,
     width: '100%',
     paddingHorizontal: 10,
+    marginTop: 5,
+    marginBottom: 20
   },
+  button: {
+    backgroundColor: '#2ecc71',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center'
+  }
 });
 
 export default App;
